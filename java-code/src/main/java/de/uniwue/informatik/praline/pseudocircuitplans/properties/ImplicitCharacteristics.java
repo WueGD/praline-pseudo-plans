@@ -4,7 +4,7 @@ import de.uniwue.informatik.praline.datastructure.graphs.*;
 import de.uniwue.informatik.praline.datastructure.labels.TextLabel;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 public class ImplicitCharacteristics {
 
@@ -32,7 +32,7 @@ public class ImplicitCharacteristics {
         if (vertex.getVertexGroup() == null) {
             return false; //this extra check is only done to prevent null pointer exception with the next local variable
         }
-        HashSet<Vertex> otherVerticesOfDevice = new HashSet<>(vertex.getVertexGroup().getContainedVertices());
+        LinkedHashSet<Vertex> otherVerticesOfDevice = new LinkedHashSet<>(vertex.getVertexGroup().getContainedVertices());
         otherVerticesOfDevice.remove(vertex);
 
         return hasOnlyPortGroupsOnTheTopLevel(vertex)

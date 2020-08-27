@@ -3,10 +3,8 @@ package de.uniwue.informatik.praline.pseudocircuitplans.properties;
 
 import com.google.common.base.Function;
 import de.uniwue.informatik.praline.datastructure.graphs.*;
-import edu.uci.ics.jung.algorithms.cluster.WeakComponentClusterer;
 import edu.uci.ics.jung.algorithms.shortestpath.DistanceStatistics;
 import edu.uci.ics.jung.graph.UndirectedGraph;
-import edu.uci.ics.jung.graph.UndirectedSparseGraph;
 
 import java.util.*;
 
@@ -55,7 +53,7 @@ public class JungUtils {
         UndirectedSparseGraph<PseudoVertex, Integer> jungGraph = new UndirectedSparseGraph<>();
 
         //add vertices
-        HashMap<Vertex, PseudoVertex> vertex2pseudoVertex = new HashMap<>();
+        LinkedHashMap<Vertex, PseudoVertex> vertex2pseudoVertex = new LinkedHashMap<>();
         for (VertexGroup vertexGroup : pralineGraph.getVertexGroups()) {
             if (!ImplicitCharacteristics.isOfType(VertexGroupType.UNDEFINED, vertexGroup, pralineGraph)) {
                 PseudoVertex pseudoVertex = new PseudoVertex(vertexGroup);
@@ -128,8 +126,11 @@ public class JungUtils {
     public static Set<Set<PseudoVertex>> getConnectedComponents(Graph pralineGraph) {
         return getConnectedComponents(transformToJungGraph(pralineGraph));
     }
+
     public static <V> Set<Set<V>> getConnectedComponents(UndirectedGraph<V, Integer> jungGraph) {
         WeakComponentClusterer<V, Integer> weakComponentClusterer = new WeakComponentClusterer<>();
-        return weakComponentClusterer.apply(jungGraph);
+        Set<Set<V>> components = weakComponentClusterer.apply(jungGraph);
+
+        return components;
     }
 }

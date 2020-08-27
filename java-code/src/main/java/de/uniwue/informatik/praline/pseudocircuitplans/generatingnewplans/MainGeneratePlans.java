@@ -15,15 +15,16 @@ import java.util.*;
 public class MainGeneratePlans {
 
     private final static String PATH_ORIGINAL_PLANS =
-//            "data" + File.separator + "largest-comp-praline-package-2020-05-18";
-            "data" + File.separator + "example-for-visualization-very-small";
+            "data" + File.separator + "largest-comp-praline-package-2020-05-18";
+//            "data" + File.separator + "example-for-visualization-very-small";
+//            "data" + File.separator + "example-for-visualization-others2";
 
     private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 
     private final static String PATH_GENERATED_PLANS =
             "data" + File.separator + "generated_" + DATE_FORMAT.format(new Date());
 
-    private final static int NUMBER_OF_GENERATED_PLANS_PER_ORIGINAL = 1;
+    private final static int NUMBER_OF_GENERATED_PLANS_PER_ORIGINAL = 3;
 
     private final static int SEED = 945395365;
 
@@ -119,7 +120,7 @@ public class MainGeneratePlans {
 
         //specific target values
 
-        //TODO: modified it -- our traget value is now always 1 component and we read from files with only 1 component
+        //TODO: modified it -- our target value is now always 1 component and we read from files with only 1 component
 
         int targetValueConnectedComponents = 1;
 //                Math.max(1, numericalTargetValues.get(PropertyManager.getProperty("componentCount")).intValue());
@@ -128,19 +129,22 @@ public class MainGeneratePlans {
 
         int targetValueSoloVertices =
                 numericalTargetValues.get(PropertyManager.getProperty("SOLO_VERTEXCount")).intValue();
-        int targetValuePortsSoloVertices = numberDistributionTargetValues.get(PropertyManager.getProperty("ports" +
-                "/SOLO_VERTEX")).get(StatisticParameter.SUM).intValue();
+        int targetValuePortsSoloVertices =
+                targetValueSoloVertices == 0 ? 0 : numberDistributionTargetValues.get(PropertyManager.getProperty(
+                        "ports/SOLO_VERTEX")).get(StatisticParameter.SUM).intValue();
         double targetValueStandardDeviationPortsPerSoloVertex = numberDistributionTargetValues.get(
                 PropertyManager.getProperty("ports/SOLO_VERTEX")).get(StatisticParameter.STANDARD_DEVIATION)
                 .doubleValue();
 
         int targetValueConnectors = numericalTargetValues.get(PropertyManager.getProperty("CONNECTORCount")).intValue();
-        int targetValuePortPairingsConnectors = numberDistributionTargetValues.get(PropertyManager.getProperty(
+        int targetValuePortPairingsConnectors =
+                targetValueConnectors == 0 ? 0 : numberDistributionTargetValues.get(PropertyManager.getProperty(
                 "portPairings/CONNECTOR")).get(StatisticParameter.SUM).intValue();
         double targetValueStandardDeviationPortPairingsPerConnector = numberDistributionTargetValues.get(
                 PropertyManager.getProperty("portPairings/CONNECTOR")).get(StatisticParameter.STANDARD_DEVIATION)
                 .doubleValue();
-        int targetValueUnpairedPortsConnectors = numberDistributionTargetValues.get(PropertyManager.getProperty(
+        int targetValueUnpairedPortsConnectors =
+                targetValueConnectors == 0 ? 0 : numberDistributionTargetValues.get(PropertyManager.getProperty(
                 "unpairedPorts/CONNECTOR")).get(StatisticParameter.SUM).intValue();
 
         int targetValueDeviceConnectors =
@@ -157,61 +161,69 @@ public class MainGeneratePlans {
          */
         int targetValueDeviceConnectorVertices = targetValueVerticesDeviceConnectors - targetValueDeviceVertices;
         double targetValueStandardDeviationVerticesPerDeviceConnector = numberDistributionTargetValues.get(
-                PropertyManager.getProperty("vertices/CONNECTOR")).get(StatisticParameter.STANDARD_DEVIATION)
+                PropertyManager.getProperty("vertices/DEVICE_CONNECTOR")).get(StatisticParameter.STANDARD_DEVIATION)
                 .doubleValue();
-        int targetValuePortPairingsDeviceConnectors = numberDistributionTargetValues.get(PropertyManager.getProperty(
+        int targetValuePortPairingsDeviceConnectors =
+                targetValueDeviceVertices == 0 ? 0 : numberDistributionTargetValues.get(PropertyManager.getProperty(
                 "portPairings/DEVICE_CONNECTOR")).get(StatisticParameter.SUM).intValue();
         double targetValueStandardDeviationPortPairingsPerDeviceConnectorVertex = numberDistributionTargetValues.get(
                 PropertyManager.getProperty("portPairings/DEVICE_CONNECTOR_VERTEX"))
                 .get(StatisticParameter.STANDARD_DEVIATION).doubleValue();
-        int targetValueUnpairedPortsDeviceConnectors = numberDistributionTargetValues.get(PropertyManager.getProperty(
+        int targetValueUnpairedPortsDeviceConnectors =
+                targetValueDeviceVertices == 0 ? 0 : numberDistributionTargetValues.get(PropertyManager.getProperty(
                 "unpairedPorts/DEVICE_CONNECTOR")).get(StatisticParameter.SUM).intValue();
 
-
-        int targetValueEdges = numericalTargetValues.get(PropertyManager.getProperty("edgeCount")).intValue();
-
-        int targetValueHyperedgesOfDegreeI[] = new int[11];
-        targetValueHyperedgesOfDegreeI[0] = 0;
-        targetValueHyperedgesOfDegreeI[1] = 0;
-        int hyperedgesSoFar = 0;
-        int portEdgeIncidences = 0;
-        for (int i = 3; i < targetValueHyperedgesOfDegreeI.length; i++) {
-            targetValueHyperedgesOfDegreeI[i] =
-                    (int) ((double) targetValueEdges * numericalTargetValues.get(PropertyManager.getProperty(
-                            "hyperedgesOfDegree" + i)).doubleValue());
-            hyperedgesSoFar += targetValueHyperedgesOfDegreeI[i];
-            portEdgeIncidences += i * targetValueHyperedgesOfDegreeI[i];
-        }
-        targetValueHyperedgesOfDegreeI[2] = Math.max(0, targetValueEdges - hyperedgesSoFar); //all other edges
-        // will have degree 2 -- this should be the overwhelming majority
-        portEdgeIncidences += 2 * targetValueHyperedgesOfDegreeI[2];
-
-
-        int targetValuePortEdgeIncidences = portEdgeIncidences;
 
         int targetValueRegularPorts = targetValuePortsSoloVertices +
                 2 * targetValuePortPairingsConnectors + targetValueUnpairedPortsConnectors +
                 targetValuePortPairingsDeviceConnectors + targetValueUnpairedPortsDeviceConnectors;
 
+        int portEdgeIncidences = 0;
         int targetValueIEdgesPerRegularPort[] = new int[5];
-        int alreadyPairedRegularPorts = 0;
-        for (int i = 0; i < 4; i++) {
-            targetValueIEdgesPerRegularPort[i] =
-                    (int) ((double) targetValueRegularPorts * numericalTargetValues.get(PropertyManager.getProperty(
-                            i + "edges/regularPorts")).doubleValue());
-            alreadyPairedRegularPorts += targetValueIEdgesPerRegularPort[i];
-        }
-        targetValueIEdgesPerRegularPort[4] = Math.max(0, targetValueRegularPorts - alreadyPairedRegularPorts);
-
-        int targetValueSpliceEdgeIncidences = targetValuePortEdgeIncidences;
+        int assignedRegularPorts = 0;
         for (int i = 0; i < targetValueIEdgesPerRegularPort.length; i++) {
-            targetValueSpliceEdgeIncidences -= i * targetValueIEdgesPerRegularPort[i];
+            if (i != 1) {
+                targetValueIEdgesPerRegularPort[i] = (int) Math.round((double) targetValueRegularPorts *
+                        numericalTargetValues.get(PropertyManager.getProperty(i + "edges/regularPorts")).doubleValue());
+                portEdgeIncidences += i * targetValueIEdgesPerRegularPort[i];
+                assignedRegularPorts += targetValueIEdgesPerRegularPort[i];
+            }
         }
+        //the rest of the regular ports will have 1 edge -- this should be the overwhelming majority
+        targetValueIEdgesPerRegularPort[1] = targetValueRegularPorts - assignedRegularPorts;
+        portEdgeIncidences += targetValueIEdgesPerRegularPort[1];
+
+        int targetValueSpliceEdgeIncidences =
+                (int) Math.round((double) targetValueSplices * numberDistributionTargetValues.get(
+                PropertyManager.getProperty("edges/splice")).get(StatisticParameter.MEAN).doubleValue());
+        portEdgeIncidences += targetValueSpliceEdgeIncidences;
+
+        int targetValueHyperedgesOfDegreeI[] = new int[16];
+        targetValueHyperedgesOfDegreeI[0] = 0;
+        targetValueHyperedgesOfDegreeI[1] = 0;
+        int targetValueEdges = 0;
+        for (int i = 3; i < targetValueHyperedgesOfDegreeI.length; i++) {
+            targetValueHyperedgesOfDegreeI[i] =
+                    numericalTargetValues.get(PropertyManager.getProperty("hyperedgesOfDegree" + i)).intValue();
+            portEdgeIncidences -= i * targetValueHyperedgesOfDegreeI[i];
+            targetValueEdges += targetValueHyperedgesOfDegreeI[i];
+        }
+        //we may add an additional degree-3-edge if there is an odd number of port--edge incidences remaining
+        if (portEdgeIncidences % 2 == 1) {
+            ++targetValueHyperedgesOfDegreeI[3];
+            portEdgeIncidences -= 3;
+            targetValueEdges++;
+        }
+        // all other edges will have degree 2 -- this should be the overwhelming majority
+        targetValueHyperedgesOfDegreeI[2] = Math.max(0, portEdgeIncidences / 2);
+        targetValueEdges += targetValueHyperedgesOfDegreeI[2];
 
         double targetValueMeanParallelEdges = numberDistributionTargetValues.get(
                 PropertyManager.getProperty("parallelEdges")).get(StatisticParameter.MEAN).doubleValue();
 
-//        //check for degenerate case and fix it TODO check degree of splice and potentially guarentee deg >= 2?
+        int targetValueSelfLoops = numericalTargetValues.get(PropertyManager.getProperty("selfLoopEdges")).intValue();
+
+//        //check for degenerate case and fix it TODO check degree of splice and potentially guarantee deg >= 2?
 //        if (targetValueSpliceEdgeIncidences < targetValueSplices) {
 //            //make sure the new incidences are an even number
 //            int missingIncidences =
@@ -220,7 +232,6 @@ public class MainGeneratePlans {
 //            targetValuePortEdgeIncidences += missingIncidences;
 //            targetValueEdges += missingIncidences / 2;
 //        }
-
 
         ////////////
         // Phase 2: remove a portion of q of all elements
@@ -260,7 +271,7 @@ public class MainGeneratePlans {
 
         // A. splices
 
-        //all splices get empty port label
+        //all splices set empty text for port labels
         for (Vertex splice : splices) {
             for (Port port : splice.getPorts()) {
                 ((TextLabel) port.getLabelManager().getMainLabel()).setInputText("");
@@ -317,7 +328,7 @@ public class MainGeneratePlans {
         //remove q port pairings from connectors
         //first find all port pairings of connectors
         ArrayList<PortPairing> portPairingsConnectors = new ArrayList<>();
-        HashSet<Port> pairedPorts = new HashSet<>();
+        LinkedHashSet<Port> pairedPorts = new LinkedHashSet<>();
         //for every connector keep randomly 1 port pairing -- we must not have connectors without port pairings
         ArrayList<PortPairing> portPairingsConnectorsForRemoval = new ArrayList<>();
         for (VertexGroup connector : connectors) {
@@ -490,15 +501,34 @@ public class MainGeneratePlans {
                 newPlan.removeEdge(edge);
             }
         }
-        //remove q of all edges
+        //select q of all edges for removal
         LinkedList<Edge> edges = new LinkedList<>(newPlan.getEdges());
         int numberEdgesRemoved = Math.max((int) ((double) edges.size() * q + 1.0),
                 edges.size() - targetValueEdges);
         List<Edge> edgesToBeRemoved = selectRandomly(newPlan.getEdges(), numberEdgesRemoved);
+
+        //check for all degrees of hyperedges that we do not have to many
+        LinkedHashMap<Integer, List<Edge>> edgesOfDegI = new LinkedHashMap<>();
+        for (int i = 0; i < targetValueHyperedgesOfDegreeI.length; i++) {
+            edgesOfDegI.put(i, new ArrayList<>());
+        }
+        for (Edge edge : edges) {
+            edgesOfDegI.get(edge.getPorts().size()).add(edge);
+        }
+        for (int i = 0; i < targetValueHyperedgesOfDegreeI.length; i++) {
+            List<Edge> edgesOfThisDeg = edgesOfDegI.get(i);
+            if (edgesOfThisDeg.size() > targetValueHyperedgesOfDegreeI[i]) {
+                edgesToBeRemoved.addAll(selectRandomly(edgesOfThisDeg,
+                        edgesOfThisDeg.size() - targetValueHyperedgesOfDegreeI[i]));
+            }
+        }
+
+        //remove edges
         for (Edge e : edgesToBeRemoved) {
             newPlan.removeEdge(e);
             edges.remove(e);
         }
+
 
         // F. dissolve q edge bundles
 
@@ -538,7 +568,7 @@ public class MainGeneratePlans {
             int numberOfNewPorts = determineNumberOfNewElements(targetValuePortsSoloVertices, targetValueSoloVertices,
                     portsSoloVertices.size(), soloVertices.size(), targetValueStandardDeviationPortsPerSoloVertex);
             for (int i = 0; i < numberOfNewPorts; i++) {
-                portsSoloVertices.add(addNewPort(newSoloVertex, portsSoloVertices));
+                addNewPort(newSoloVertex, portsSoloVertices);
             }
 
             soloVertices.add(newSoloVertex);
@@ -549,7 +579,7 @@ public class MainGeneratePlans {
         // original distribution
         while (portsSoloVertices.size() < targetValuePortsSoloVertices && !soloVertices.isEmpty()) {
             Vertex soloVertex = selectRandomly(soloVertices, 1).get(0);
-            portsSoloVertices.add(addNewPort(soloVertex, portsSoloVertices));
+            addNewPort(soloVertex, portsSoloVertices);
         }
         //reset port label text of solo vertices
         for (Vertex soloVertex : soloVertices) {
@@ -595,7 +625,7 @@ public class MainGeneratePlans {
         while (unpairedPortsConnectors.size() < targetValueUnpairedPortsConnectors && !connectors.isEmpty()) {
             VertexGroup connector = selectRandomly(connectors, 1).get(0);
             Vertex connectorVertex = selectRandomly(connector.getContainedVertices(), 1).get(0);
-            unpairedPortsConnectors.add(addNewPort(connectorVertex, unpairedPortsConnectors));
+            addNewPort(connectorVertex, unpairedPortsConnectors);
         }
         //reset port label text of connectors
         for (VertexGroup connector : connectors) {
@@ -681,7 +711,7 @@ public class MainGeneratePlans {
                 && !deviceConnectors.isEmpty()) {
             VertexGroup deviceConnector = selectRandomly(deviceConnectors, 1).get(0);
             Vertex vertexOfDeviceConnector = selectRandomly(deviceConnector.getContainedVertices(), 1).get(0);
-            unpairedPortsDeviceConnectors.add(addNewPort(vertexOfDeviceConnector, unpairedPortsDeviceConnectors));
+            addNewPort(vertexOfDeviceConnector, unpairedPortsDeviceConnectors);
         }
         //reset port label text of connectors
         for (VertexGroup deviceConnector : deviceConnectors) {
@@ -692,36 +722,52 @@ public class MainGeneratePlans {
 
         int missingEdges = targetValueEdges - edges.size();
         //find ports without an edge, they are candidates to get new edges
-        LinkedList<Port> regularPortsWithoutEdge = new LinkedList<>();
+        List<Port> regularPortsWithoutEdgeUnassigned = new ArrayList<>();
+        Map<Integer, List<Port>> numberOfEdges2RegularPort = new LinkedHashMap<>();
+        for (int i = 1; i < targetValueIEdgesPerRegularPort.length; i++) {
+            numberOfEdges2RegularPort.put(i, new ArrayList<>());
+        }
+        //add ports of solo vertices
         for (Port port : portsSoloVertices) {
             if (port.getEdges().isEmpty()) {
-                regularPortsWithoutEdge.add(port);
+                regularPortsWithoutEdgeUnassigned.add(port);
+            }
+            else {
+                numberOfEdges2RegularPort.get(port.getEdges().size()).add(port);
             }
         }
+        //add paired and unpaired ports of connectors
         for (VertexGroup connector : connectors) {
             for (Vertex connectorVertex : connector.getContainedVertices()) {
                 for (Port port : connectorVertex.getPorts()) {
                     if (port.getEdges().isEmpty()) {
-                        regularPortsWithoutEdge.add(port);
+                        regularPortsWithoutEdgeUnassigned.add(port);
+                    }
+                    else {
+                        numberOfEdges2RegularPort.get(port.getEdges().size()).add(port);
                     }
                 }
             }
         }
+        //add paired and unpaired ports of device connector vertices
         for (Vertex deviceConnectorVertex : allDeviceConnectorVertices) {
             for (Port port : deviceConnectorVertex.getPorts()) {
                 if (port.getEdges().isEmpty()) {
-                    regularPortsWithoutEdge.add(port);
+                    regularPortsWithoutEdgeUnassigned.add(port);
+                }
+                else {
+                    numberOfEdges2RegularPort.get(port.getEdges().size()).add(port);
                 }
             }
         }
-        for (Port port : unpairedPortsConnectors) {
-            if (port.getEdges().isEmpty()) {
-                regularPortsWithoutEdge.add(port);
-            }
-        }
+        //add unpaired ports of device vertices
         for (Port port : unpairedPortsDeviceConnectors) {
-            if (port.getEdges().isEmpty()) {
-                regularPortsWithoutEdge.add(port);
+            if (allDeviceVertices.contains(port.getVertex())) {
+                if (port.getEdges().isEmpty()) {
+                    regularPortsWithoutEdgeUnassigned.add(port);
+                } else {
+                    numberOfEdges2RegularPort.get(port.getEdges().size()).add(port);
+                }
             }
         }
         //splice ports
@@ -739,7 +785,7 @@ public class MainGeneratePlans {
             List<List<Port>> portsComponents = new ArrayList<>(2);
             for (int i = 0; i < 2; i++) {
                 List<Port> portsOfComponent = new LinkedList<>();
-                for (Port port : regularPortsWithoutEdge) {
+                for (Port port : regularPortsWithoutEdgeUnassigned) {
                     JungUtils.PseudoVertex pseudoVertexForRealVertex = new JungUtils.PseudoVertex(port.getVertex());
                     JungUtils.PseudoVertex pseudoVertexForRealVertexGroup = null;
                     if (port.getVertex().getVertexGroup() != null) {
@@ -769,6 +815,8 @@ public class MainGeneratePlans {
                     newPlan) : selectRandomly(portsComponents.get(1), 1).get(0);
             addNewEdge(newPlan, Arrays.asList(port0, port1), edges);
             --missingEdges;
+            updatePortLists(port0, regularPortsWithoutEdgeUnassigned, numberOfEdges2RegularPort, newPlan);
+            updatePortLists(port1, regularPortsWithoutEdgeUnassigned, numberOfEdges2RegularPort, newPlan);
 
             //unify components
             connectedComponents.remove(componentsToBeConnected.get(0));
@@ -777,32 +825,82 @@ public class MainGeneratePlans {
             unificationComponent.addAll(componentsToBeConnected.get(1));
             connectedComponents.add(unificationComponent);
         }
-        //update regular ports without edge
-        for (Port port : new ArrayList<>(regularPortsWithoutEdge)) {
-            if (!port.getEdges().isEmpty()) {
-                regularPortsWithoutEdge.remove(port);
-            }
-        }
 
         //determine for each such regular port without edges how many edges it should get in the end
-        LinkedList<Port> portsToGetAnEdge = new LinkedList<>();
+        List<Port> portsToGetAnEdge = new ArrayList<>();
+        List<Port> portsToGetMoreEdges = new ArrayList<>();
+        List<Port> regularPortsWithoutEdge = selectRandomly(regularPortsWithoutEdgeUnassigned,
+                targetValueIEdgesPerRegularPort[0]);
+        regularPortsWithoutEdgeUnassigned.removeAll(regularPortsWithoutEdge);
+        Map<Integer, List<Port>> currNumberOfEdges2ports = new LinkedHashMap<>();
+        Map<Integer, List<Port>> addedNumberOfEdges2ports = new LinkedHashMap<>();
+        currNumberOfEdges2ports.put(0, regularPortsWithoutEdge);
         for (int i = 1; i < targetValueIEdgesPerRegularPort.length; i++) {
-            int currPortsWithIEdges = countPortsWithIEdges(newPlan, i);
-            int missingPortsWithIEdges = Math.max(0, targetValueIEdgesPerRegularPort[i] - currPortsWithIEdges);
-            List<Port> portsToGetIEdges = selectRandomly(regularPortsWithoutEdge, missingPortsWithIEdges);
-            regularPortsWithoutEdge.removeAll(portsToGetIEdges);
-            for (Port portToGetIEdges : portsToGetIEdges) {
-                for (int j = 0; j < i; j++) { //add the selected ports i times -> each occurrence will get an edge later
-                    portsToGetAnEdge.add(portToGetIEdges);
+            List<Port> currRegularPortsWithIEdges = numberOfEdges2RegularPort.get(i);
+            currNumberOfEdges2ports.put(i, new ArrayList<>(currRegularPortsWithIEdges));
+            addedNumberOfEdges2ports.put(i, new ArrayList<>());
+            int missingPortsWithIEdges = targetValueIEdgesPerRegularPort[i] - currRegularPortsWithIEdges.size();
+            if (missingPortsWithIEdges > 0) {
+                List<Port> candidates = new ArrayList<>(regularPortsWithoutEdgeUnassigned);
+                candidates.addAll(portsToGetMoreEdges);
+                List<Port> portsToGetIEdges = selectRandomly(candidates, missingPortsWithIEdges);
+                for (Port portToGetIEdges : portsToGetIEdges) {
+                    //add the selected ports up to i times -> each occurrence will get an edge later
+                    for (int j = portToGetIEdges.getEdges().size()
+                            + countOccurrences(portsToGetAnEdge, portToGetIEdges); j < i; j++) {
+                        portsToGetAnEdge.add(portToGetIEdges);
+                    }
+                    regularPortsWithoutEdgeUnassigned.remove(portToGetIEdges);
+                    portsToGetMoreEdges.remove(portToGetIEdges);
+                    --missingPortsWithIEdges;
+                }
+                addedNumberOfEdges2ports.get(i).addAll(portsToGetIEdges);
+                if (missingPortsWithIEdges > 0) {
+                    //there are no more ports available; maybe adapt target values instead (currently commented out)
+//                    if (i < targetValueIEdgesPerRegularPort.length - 1) {
+//                        targetValueIEdgesPerRegularPort[i] -= missingPortsWithIEdges;
+//                        targetValueIEdgesPerRegularPort[i + 1] += missingPortsWithIEdges;
+//                    }
+                }
+            }
+            else if (missingPortsWithIEdges < 0) {
+                portsToGetMoreEdges.addAll(selectRandomly(currRegularPortsWithIEdges, -missingPortsWithIEdges));
+                for (Port port : portsToGetMoreEdges) {
+                    currNumberOfEdges2ports.get(i).remove(port);
+                    addedNumberOfEdges2ports.get(i).remove(port);
                 }
             }
         }
+        if (portsToGetMoreEdges.size() > 0) {
+            //that case should ideally not or occcur. If it (rarely) does, maybe add a port--edge incidence (next line)
+//            portsToGetAnEdge.addAll(portsToGetMoreEdges);
+        }
         //and for all splices
         int currSpliceEdgeIncidences = countSpliceEdgeIncidences(newPlan);
-        while (currSpliceEdgeIncidences < targetValueSpliceEdgeIncidences && !splicePorts.isEmpty()) {
+        int addedSpliceEdgeIncidences = 0;
+        while (currSpliceEdgeIncidences + addedSpliceEdgeIncidences < targetValueSpliceEdgeIncidences
+                && !splicePorts.isEmpty()) {
             portsToGetAnEdge.add(selectRandomly(splicePorts, 1).get(0));
-            ++currSpliceEdgeIncidences;
+            ++addedSpliceEdgeIncidences;
         }
+
+        ////////////////////
+        //this block is just for checking correctness and is not used later in the code
+        int availablePortIncidences = portsToGetAnEdge.size();
+        int missingEdgeIncidences = 0;
+        LinkedHashMap<Integer, Integer> existingEdgesOfDegI = new LinkedHashMap<>();
+        LinkedHashMap<Integer, Integer> missingEdgesOfDegI = new LinkedHashMap<>();
+        for (int i = 0; i < targetValueHyperedgesOfDegreeI.length; i++) {
+            missingEdgeIncidences += i * Math.max(0,
+                    targetValueHyperedgesOfDegreeI[i] - countHyperedgesOfDegreeI(newPlan, i));
+            existingEdgesOfDegI.put(i, countHyperedgesOfDegreeI(newPlan, i));
+            missingEdgesOfDegI.put(i, targetValueHyperedgesOfDegreeI[i] - countHyperedgesOfDegreeI(newPlan, i));
+        }
+        if (availablePortIncidences != missingEdgeIncidences) {
+            //TODO: bad case, occurs sometimes (maybe 1 of 20 times a plan is generated)
+        }
+        ////////////////////
+
 
         //randomly connect the remaining ports of the list -- however if both endpoints are the same port choose a new
         // random port instead.
@@ -813,7 +911,7 @@ public class MainGeneratePlans {
             int currEdgesOfDegI = countHyperedgesOfDegreeI(newPlan, i);
             while (targetValueHyperedgesOfDegreeI[i] > currEdgesOfDegI) {
                 boolean success = findAndInsertNewEdge(newPlan, portsToGetAnEdge, i, edges,
-                        targetValueMeanParallelEdges);
+                        targetValueMeanParallelEdges, targetValueSelfLoops);
                 if (!success) {
                     break;
                 }
@@ -824,14 +922,14 @@ public class MainGeneratePlans {
         //add edges of deg 2
         while (missingEdges > 0) {
             boolean success = findAndInsertNewEdge(newPlan, portsToGetAnEdge, 2, edges,
-                    targetValueMeanParallelEdges);
+                    targetValueMeanParallelEdges, targetValueSelfLoops);
             if (!success) {
                 break;
             }
             --missingEdges;
         }
 
-        // E. insert edge bundles
+        // F. insert edge bundles
 
         //TODO
 
@@ -863,6 +961,31 @@ public class MainGeneratePlans {
         }
 
         return true;
+    }
+
+    private static <E> int countOccurrences(List<E> list, E element) {
+        int counter = 0;
+        for (E e : list) {
+            if (e.equals(element)) {
+                ++counter;
+            }
+        }
+        return counter;
+    }
+
+    private static void updatePortLists(Port port, List<Port> regularPortsWithoutEdgeUnassigned,
+                                        Map<Integer, List<Port>> numberOfEdges2RegularPort, Graph graph) {
+        if (ImplicitCharacteristics.isSplice(port.getVertex(), graph)) {
+            return;
+        }
+        if (regularPortsWithoutEdgeUnassigned.contains(port)) {
+            regularPortsWithoutEdgeUnassigned.remove(port);
+            numberOfEdges2RegularPort.get(1).add(port);
+        }
+        else {
+            numberOfEdges2RegularPort.get(port.getEdges().size() - 1).remove(port);
+            numberOfEdges2RegularPort.get(port.getEdges().size()).add(port);
+        }
     }
 
     private static Port getPortThatCanHaveEdges(Set<JungUtils.PseudoVertex> pseudoVertices, Graph graph) {
@@ -905,7 +1028,7 @@ public class MainGeneratePlans {
      */
     private static boolean findAndInsertNewEdge(Graph graph, List<Port> portsToGetAnEdge, int numberOfPorts,
                                                 Collection<Edge> setOfAlreadyExistingEdges,
-                                                double targetValueMeanParallelEdges) {
+                                                double targetValueMeanParallelEdges, int targetValueSelfLoops) {
         List<Collection<Port>> candidatesForNewEdge = generateCandidatesForNewEdge(portsToGetAnEdge, numberOfPorts);
         //if no edges available return fail
         if (candidatesForNewEdge == null) {
@@ -915,7 +1038,8 @@ public class MainGeneratePlans {
         double bestBadness = Double.POSITIVE_INFINITY;
         Collection<Port> bestCandidate = null;
         for (Collection<Port> candidate : candidatesForNewEdge) {
-            double badnessCandidate = evaluateInsertionOfEdge(graph, candidate, targetValueMeanParallelEdges);
+            double badnessCandidate = evaluateInsertionOfEdge(graph, candidate, targetValueMeanParallelEdges,
+                    targetValueSelfLoops);
             if (badnessCandidate < bestBadness) {
                 bestBadness = badnessCandidate;
                 bestCandidate = candidate;
@@ -938,7 +1062,7 @@ public class MainGeneratePlans {
      *      badness of insertion (0 is best possible insertion)
      */
     private static double evaluateInsertionOfEdge(Graph graph, Collection<Port> portsOfNewEdge,
-                                                  double targetValueMeanParallelEdges) {
+                                                  double targetValueMeanParallelEdges, int targetValueSelfLoops) {
         //add edge just to compute the badness
         Edge newEdge = addNewEdge(graph, portsOfNewEdge, null);
         //compute badness
@@ -948,7 +1072,11 @@ public class MainGeneratePlans {
                 parallelEdgesProperty.getComputingFunctionProperty().apply(graph);
         double currentMean = parallelEdgesDistribution.get(StatisticParameter.MEAN);
 //        double currentStandardDeviation = parallelEdgesDistribution.get(StatisticParameter.STANDARD_DEVIATION);
-        double badness = Math.pow(targetValueMeanParallelEdges / currentMean - 1.0, 2.0);
+        NumericalProperty<Integer> selfLoopProperty =
+                (NumericalProperty<Integer>) PropertyManager.getProperty("selfLoopEdges");
+        int selfLoops = selfLoopProperty.getComputingFunctionProperty().apply(graph);
+        int numberOfSurplusSelfLoops = Math.max(0, selfLoops - targetValueSelfLoops);
+        double badness = Math.pow(targetValueMeanParallelEdges / currentMean - 1.0, 2.0) + numberOfSurplusSelfLoops;
         //remove the new edge after evaluation
         graph.removeEdge(newEdge);
 
@@ -1004,22 +1132,12 @@ public class MainGeneratePlans {
         int sum = 0;
         for (Vertex vertex : graph.getVertices()) {
             if (ImplicitCharacteristics.isSplice(vertex, graph)) {
-                sum += vertex.getPorts().iterator().next().getEdges().size();
-            }
-        }
-        return sum;
-    }
-
-    private static int countPortsWithIEdges(Graph graph, int i) {
-        int count = 0;
-        for (Vertex vertex : graph.getVertices()) {
-            for (Port port : vertex.getPorts()) {
-                if (port.getEdges().size() == i) {
-                    ++count;
+                for (Port port : vertex.getPorts()) {
+                    sum += port.getEdges().size();
                 }
             }
         }
-        return count;
+        return sum;
     }
 
     private static Edge addNewEdge(Graph graph, Collection<Port> ports, Collection<Edge> setOfAlreadyExistingEdges) {
@@ -1113,8 +1231,7 @@ public class MainGeneratePlans {
                 newPortsToBeAddedTo.add(port);
             }
             portsOfNewPortPairing.add(port);
-            PortGroup portGroup = findOrCreateCorrectPortGroup(vertex, twoVerticesToGetThePortPairing, vertexGroup,
-                    graph);
+            PortGroup portGroup = findOrCreateCorrectPortGroup(vertex, vertexGroup, graph);
             portGroup.addPortComposition(port);
         }
         PortPairing newPortPairing = new PortPairing(portsOfNewPortPairing.get(0), portsOfNewPortPairing.get(1));
@@ -1123,8 +1240,7 @@ public class MainGeneratePlans {
         return newPortPairing;
     }
 
-    private static PortGroup findOrCreateCorrectPortGroup(Vertex vertex, List<Vertex> twoVerticesToGetThePortPairing,
-                                                          VertexGroup vertexGroup, Graph graph) {
+    private static PortGroup findOrCreateCorrectPortGroup(Vertex vertex, VertexGroup vertexGroup, Graph graph) {
         if (ImplicitCharacteristics.isOfType(VertexType.DEVICE_VERTEX, vertex, graph)) {
             ArrayList<PortGroup> allPortGroups = new ArrayList<>();
             for (PortComposition portGroup : vertex.getPortCompositions()) {
@@ -1209,7 +1325,7 @@ public class MainGeneratePlans {
 
         //name the ports of the other vertices
         //1. determine prefix
-        Map<Vertex, String> vertex2prefix = new HashMap<>();
+        Map<Vertex, String> vertex2prefix = new LinkedHashMap<>();
         vertex2prefix.put(vertexWithMostPorts, "A.");
         Iterator<String> alphabet =
                 Arrays.asList("B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
@@ -1292,8 +1408,7 @@ public class MainGeneratePlans {
     }
 
     private static Map<VertexType, List<Vertex>> separateVertices(Graph plan) {
-        Map<VertexType, List<Vertex>> vertexTypeMap = new HashMap<>(VertexType.values().length);
-        Map<VertexGroupType, List<VertexGroup>> vertexGroupTypeMap = new HashMap<>(VertexGroupType.values().length);
+        Map<VertexType, List<Vertex>> vertexTypeMap = new LinkedHashMap<>(VertexType.values().length);
 
         for (VertexType vertexType : VertexType.values()) {
             vertexTypeMap.put(vertexType, new ArrayList<>());
@@ -1305,7 +1420,7 @@ public class MainGeneratePlans {
     }
 
     private static Map<VertexGroupType, List<VertexGroup>> separateVertexGroups(Graph plan) {
-        Map<VertexGroupType, List<VertexGroup>> vertexGroupTypeMap = new HashMap<>(VertexGroupType.values().length);
+        Map<VertexGroupType, List<VertexGroup>> vertexGroupTypeMap = new LinkedHashMap<>(VertexGroupType.values().length);
 
         for (VertexGroupType vertexGroupType : VertexGroupType.values()) {
             vertexGroupTypeMap.put(vertexGroupType, new ArrayList<>());
@@ -1327,8 +1442,8 @@ public class MainGeneratePlans {
     private static Pair<Map<NumericalProperty,Number>, Map<NumberDistributionProperty,Map<StatisticParameter,Number>>>
     determineTargetValues(PropertySheet originalPlanSheet, DataSetProperties originalPlansProperties) {
 
-        Map<NumericalProperty,Number> numericalPropertyMap = new HashMap<>();
-        Map<NumberDistributionProperty,Map<StatisticParameter,Number>> numberDistributionPropertyMap = new HashMap<>();
+        Map<NumericalProperty,Number> numericalPropertyMap = new LinkedHashMap<>();
+        Map<NumberDistributionProperty,Map<StatisticParameter,Number>> numberDistributionPropertyMap = new LinkedHashMap<>();
 
         for (PropertyValue propertyValue : originalPlanSheet.getAllValues()) {
             Property property = propertyValue.getProperty();
@@ -1340,7 +1455,7 @@ public class MainGeneratePlans {
             }
             else if (property instanceof NumberDistributionProperty) {
                 NumberDistribution<?> numberDistribution = (NumberDistribution<?>) propertyValue.getValue();
-                numberDistributionPropertyMap.put((NumberDistributionProperty) property, new HashMap<>());
+                numberDistributionPropertyMap.put((NumberDistributionProperty) property, new LinkedHashMap<>());
                 for (StatisticParameter statisticParameter : StatisticParameter.values()) {
                     Number n = numberDistribution.get(statisticParameter);
                     double standardDeviation = findStandardDeviation((NumberDistributionProperty) property,
@@ -1383,14 +1498,14 @@ public class MainGeneratePlans {
 
     private static double findStandardDeviation(NumericalProperty property, DataSetProperties originalPlansProperties) {
         return originalPlansProperties.get(property, StatisticParameter.STANDARD_DEVIATION)
-                / originalPlansProperties.get(property, StatisticParameter.COUNT) * 100.0;
+                / originalPlansProperties.get(property, StatisticParameter.COUNT) * 40.0; //100.0;
     }
 
     private static double findStandardDeviation(NumberDistributionProperty property,
                                                 StatisticParameter statisticParameter,
                                                 DataSetProperties originalPlansProperties) {
         return originalPlansProperties.get(property, statisticParameter, StatisticParameter.STANDARD_DEVIATION)
-                / originalPlansProperties.get(property, statisticParameter, StatisticParameter.COUNT) * 2.0;
+                / originalPlansProperties.get(property, statisticParameter, StatisticParameter.COUNT); // * 2.0;
     }
 
     private static <E> List<E> selectRandomly(List<E> baseList, int elementsToBeSelected) {

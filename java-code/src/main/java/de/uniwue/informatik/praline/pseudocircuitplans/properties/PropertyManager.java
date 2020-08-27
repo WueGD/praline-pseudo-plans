@@ -66,7 +66,7 @@ public class PropertyManager {
      *      maximum recursion depth
      */
     private static int addAllContainedPortGroupsRecursively(Collection<PortComposition> portCompositions,
-                                                            HashSet<PortGroup> allPortGroups) {
+                                                            LinkedHashSet<PortGroup> allPortGroups) {
         int maxRecursionDepth = 0;
         for (PortComposition portComposition : portCompositions) {
             if (portComposition instanceof PortGroup) {
@@ -86,7 +86,7 @@ public class PropertyManager {
      *      maximum recursion depth
      */
     private static int addAllContainedVertexGroupsRecursively(Collection<VertexGroup> vertexGroups,
-                                                              HashSet<VertexGroup> allVertexGroups) {
+                                                              LinkedHashSet<VertexGroup> allVertexGroups) {
         int maxRecursionDepth = 1;
         for (VertexGroup vertexGroup : vertexGroups) {
             allVertexGroups.add(vertexGroup);
@@ -106,7 +106,7 @@ public class PropertyManager {
      *      maximum recursion depth
      */
     private static int addAllContainedEdgeBundlesRecursively(Collection<EdgeBundle> edgeBundles,
-                                                             HashSet<EdgeBundle> allEdgeBundles) {
+                                                             LinkedHashSet<EdgeBundle> allEdgeBundles) {
         int maxRecursionDepth = 1;
         for (EdgeBundle edgeBundle : edgeBundles) {
             if (edgeBundle == null) {
@@ -147,7 +147,7 @@ public class PropertyManager {
         // # vertexGroups
 
         allProperties.add(NumericalProperty.createNewProperty("vertexGroupCount", graph -> {
-            HashSet<VertexGroup> allVertexGroups = new HashSet<>();
+            LinkedHashSet<VertexGroup> allVertexGroups = new LinkedHashSet<>();
             for (VertexGroup vertexGroup : graph.getVertexGroups()) {
                 allVertexGroups.add(vertexGroup);
                 addAllContainedVertexGroupsRecursively(vertexGroup.getContainedVertexGroups(), allVertexGroups);
@@ -162,7 +162,7 @@ public class PropertyManager {
         // # edgeBundles
 
         allProperties.add(NumericalProperty.createNewProperty("edgeBundleCount", graph -> {
-            HashSet<EdgeBundle> allEdgeBundles = new HashSet<>();
+            LinkedHashSet<EdgeBundle> allEdgeBundles = new LinkedHashSet<>();
             for (EdgeBundle edgeBundle : graph.getEdgeBundles()) {
                 allEdgeBundles.add(edgeBundle);
                 addAllContainedEdgeBundlesRecursively(edgeBundle.getContainedEdgeBundles(), allEdgeBundles);
@@ -176,7 +176,7 @@ public class PropertyManager {
                 graph -> {
                     int sum = 0;
                     for (EdgeBundle edgeBundle : graph.getEdgeBundles()) {
-                        HashSet<EdgeBundle> allContainedEdgeBundles = new HashSet<>();
+                        LinkedHashSet<EdgeBundle> allContainedEdgeBundles = new LinkedHashSet<>();
                         allContainedEdgeBundles.add(edgeBundle);
                         addAllContainedEdgeBundlesRecursively(edgeBundle.getContainedEdgeBundles(),
                                 allContainedEdgeBundles);
@@ -187,13 +187,13 @@ public class PropertyManager {
                         //check if the contained edges all connect the same set of vertices
                         if (!allContainedEdges.isEmpty()) {
                             //the first entry determines the reference set
-                            HashSet<Vertex> connectedVerticesReferenceSet = new HashSet<>();
+                            LinkedHashSet<Vertex> connectedVerticesReferenceSet = new LinkedHashSet<>();
                             for (Port port : allContainedEdges.get(0).getPorts()) {
                                 connectedVerticesReferenceSet.add(port.getVertex());
                             }
                             //all others should contain the reference set
                             for (Edge containedEdge : allContainedEdges) {
-                                HashSet<Vertex> connectedVertices = new HashSet<>();
+                                LinkedHashSet<Vertex> connectedVertices = new LinkedHashSet<>();
                                 for (Port port : containedEdge.getPorts()) {
                                     connectedVertices.add(port.getVertex());
                                 }
@@ -224,7 +224,7 @@ public class PropertyManager {
                 graph -> {
                     int sum = 0;
                     for (EdgeBundle edgeBundle : graph.getEdgeBundles()) {
-                        HashSet<EdgeBundle> allContainedEdgeBundles = new HashSet<>();
+                        LinkedHashSet<EdgeBundle> allContainedEdgeBundles = new LinkedHashSet<>();
                         allContainedEdgeBundles.add(edgeBundle);
                         addAllContainedEdgeBundlesRecursively(edgeBundle.getContainedEdgeBundles(),
                                 allContainedEdgeBundles);
@@ -235,13 +235,13 @@ public class PropertyManager {
                         //check if two edges do not even have one common vertex
                         boolean bundleIsUnrelated = false;
                         for (Edge edge0 : allContainedEdges) {
-                            HashSet<Vertex> connectedVerticesEdge0 = new HashSet<>();
+                            LinkedHashSet<Vertex> connectedVerticesEdge0 = new LinkedHashSet<>();
                             for (Port port : edge0.getPorts()) {
                                 connectedVerticesEdge0.add(port.getVertex());
                             }
                             for (Edge edge1 : allContainedEdges) {
                                 boolean unrelated = true;
-                                HashSet<Vertex> connectedVerticesEdge1 = new HashSet<>();
+                                LinkedHashSet<Vertex> connectedVerticesEdge1 = new LinkedHashSet<>();
                                 for (Port port : edge1.getPorts()) {
                                     connectedVerticesEdge1.add(port.getVertex());
                                 }
@@ -346,7 +346,7 @@ public class PropertyManager {
         // # port groups
 
         allProperties.add(NumericalProperty.createNewProperty("portGroupCount", graph -> {
-            HashSet<PortGroup> allPortGroups = new HashSet<>();
+            LinkedHashSet<PortGroup> allPortGroups = new LinkedHashSet<>();
             for (Vertex vertex : graph.getVertices()) {
                 addAllContainedPortGroupsRecursively(vertex.getPortCompositions(), allPortGroups);
             }
@@ -356,7 +356,7 @@ public class PropertyManager {
         // # port groups with fixed order
 
         allProperties.add(NumericalProperty.createNewProperty("orderedPortGroupCount", graph -> {
-            HashSet<PortGroup> allPortGroups = new HashSet<>();
+            LinkedHashSet<PortGroup> allPortGroups = new LinkedHashSet<>();
             for (Vertex vertex : graph.getVertices()) {
                 addAllContainedPortGroupsRecursively(vertex.getPortCompositions(), allPortGroups);
             }
@@ -404,7 +404,7 @@ public class PropertyManager {
         allProperties.add(NumericalProperty.createNewProperty("selfLoopEdges", graph -> {
             int count = 0;
             for (Edge edge : graph.getEdges()) {
-                HashSet<Vertex> incidentVertices = new HashSet<>();
+                LinkedHashSet<Vertex> incidentVertices = new LinkedHashSet<>();
                 for (Port port : edge.getPorts()) {
                     incidentVertices.add(port.getVertex());
                 }
@@ -420,9 +420,9 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("parallelEdges", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
 
-            HashSet<Vertex> alreadyProcessedVertices = new HashSet<>();
+            LinkedHashSet<Vertex> alreadyProcessedVertices = new LinkedHashSet<>();
             for (Vertex vertex : graph.getVertices()) {
-                HashMap<Vertex, Integer> otherVertex2numberOfParallelEdges = new HashMap<>();
+                LinkedHashMap<Vertex, Integer> otherVertex2numberOfParallelEdges = new LinkedHashMap<>();
                 for (Port port : vertex.getPorts()) {
                     for (Edge edge : port.getEdges()) {
                         for (Port otherPort : edge.getPorts()) {
@@ -574,7 +574,7 @@ public class PropertyManager {
             return distribution;
         }));
 
-        // ratio i ports per edge (degree of hyperedges)
+        // # hyperedges being adjacent to i ports (degree of hyperedges)
 
         allProperties.addAll(createDegreeOfHyperedgeProperties());
 
@@ -633,7 +633,7 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("portGroups/vertex", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
             for (Vertex vertex : graph.getVertices()) {
-                HashSet<PortGroup> allContainedPortGroups = new HashSet<>();
+                LinkedHashSet<PortGroup> allContainedPortGroups = new LinkedHashSet<>();
                 if (vertex.getPortCompositions() != null) {
                     addAllContainedPortGroupsRecursively(vertex.getPortCompositions(),
                             allContainedPortGroups);
@@ -648,7 +648,7 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("portGroups/portGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
             for (Vertex vertex : graph.getVertices()) {
-                HashSet<PortGroup> allContainedPortGroups = new HashSet<>();
+                LinkedHashSet<PortGroup> allContainedPortGroups = new LinkedHashSet<>();
                 if (vertex.getPortCompositions() != null) {
                     addAllContainedPortGroupsRecursively(vertex.getPortCompositions(),
                             allContainedPortGroups);
@@ -674,7 +674,7 @@ public class PropertyManager {
             for (Vertex vertex : graph.getVertices()) {
                 if (vertex.getPortCompositions() != null) {
                     distribution.add(addAllContainedPortGroupsRecursively(vertex.getPortCompositions(),
-                            new HashSet<>()));
+                            new LinkedHashSet<>()));
                 }
             }
             return distribution;
@@ -685,7 +685,7 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("ports/portGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
             for (Vertex vertex : graph.getVertices()) {
-                HashSet<PortGroup> allContainedPortGroups = new HashSet<>();
+                LinkedHashSet<PortGroup> allContainedPortGroups = new LinkedHashSet<>();
                 if (vertex.getPortCompositions() != null) {
                     addAllContainedPortGroupsRecursively(vertex.getPortCompositions(),
                             allContainedPortGroups);
@@ -726,7 +726,7 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("(ports/portGroup)/(ports/vertex)", graph -> {
             NumberDistribution<Double> distribution = new NumberDistribution<>();
             for (Vertex vertex : graph.getVertices()) {
-                HashSet<PortGroup> allContainedPortGroups = new HashSet<>();
+                LinkedHashSet<PortGroup> allContainedPortGroups = new LinkedHashSet<>();
                 if (vertex.getPortCompositions() != null) {
                     addAllContainedPortGroupsRecursively(vertex.getPortCompositions(),
                             allContainedPortGroups);
@@ -751,7 +751,7 @@ public class PropertyManager {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
             for (Vertex vertex : graph.getVertices()) {
                 int count = 0;
-                HashSet<VertexGroup> allContainedVertexGroups = new HashSet<>();
+                LinkedHashSet<VertexGroup> allContainedVertexGroups = new LinkedHashSet<>();
                 addAllContainedVertexGroupsRecursively(graph.getVertexGroups(), allContainedVertexGroups);
                 for (VertexGroup vertexGroup : allContainedVertexGroups) {
                     if (vertexGroup.getContainedVertices().contains(vertex)){
@@ -767,7 +767,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("vertices/vertexGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<VertexGroup> allContainedVertexGroups = new HashSet<>();
+            LinkedHashSet<VertexGroup> allContainedVertexGroups = new LinkedHashSet<>();
             addAllContainedVertexGroupsRecursively(graph.getVertexGroups(), allContainedVertexGroups);
             for (VertexGroup vertexGroup : allContainedVertexGroups) {
                 distribution.add(vertexGroup.getContainedVertices().size());
@@ -779,7 +779,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("verticesConnectedToTheOutside/vertexGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<VertexGroup> allContainedVertexGroups = new HashSet<>();
+            LinkedHashSet<VertexGroup> allContainedVertexGroups = new LinkedHashSet<>();
             addAllContainedVertexGroupsRecursively(graph.getVertexGroups(), allContainedVertexGroups);
             for (VertexGroup vertexGroup : allContainedVertexGroups) {
                 int count = 0;
@@ -809,7 +809,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("verticesWithoutEdge/vertexGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<VertexGroup> allContainedVertexGroups = new HashSet<>();
+            LinkedHashSet<VertexGroup> allContainedVertexGroups = new LinkedHashSet<>();
             addAllContainedVertexGroupsRecursively(graph.getVertexGroups(), allContainedVertexGroups);
             for (VertexGroup vertexGroup : allContainedVertexGroups) {
                 int count = 0;
@@ -831,7 +831,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("verticesNotInATouchingPair/vertexGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<VertexGroup> allContainedVertexGroups = new HashSet<>();
+            LinkedHashSet<VertexGroup> allContainedVertexGroups = new LinkedHashSet<>();
             addAllContainedVertexGroupsRecursively(graph.getVertexGroups(), allContainedVertexGroups);
             for (VertexGroup vertexGroup : allContainedVertexGroups) {
                 int count = 0;
@@ -856,7 +856,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("verticesInMultipleTouchingPairs/vertexGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<VertexGroup> allContainedVertexGroups = new HashSet<>();
+            LinkedHashSet<VertexGroup> allContainedVertexGroups = new LinkedHashSet<>();
             addAllContainedVertexGroupsRecursively(graph.getVertexGroups(), allContainedVertexGroups);
             for (VertexGroup vertexGroup : allContainedVertexGroups) {
                 int count = 0;
@@ -881,7 +881,7 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("verticesInMultipleTouchingPairsHavingEdges/vertexGroup",
                 graph -> {
                     NumberDistribution<Integer> distribution = new NumberDistribution<>();
-                    HashSet<VertexGroup> allContainedVertexGroups = new HashSet<>();
+                    LinkedHashSet<VertexGroup> allContainedVertexGroups = new LinkedHashSet<>();
                     addAllContainedVertexGroupsRecursively(graph.getVertexGroups(), allContainedVertexGroups);
                     for (VertexGroup vertexGroup : allContainedVertexGroups) {
                         int count = 0;
@@ -933,7 +933,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("portsNotInAPortPairing/vertexGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<VertexGroup> allContainedVertexGroups = new HashSet<>();
+            LinkedHashSet<VertexGroup> allContainedVertexGroups = new LinkedHashSet<>();
             addAllContainedVertexGroupsRecursively(graph.getVertexGroups(), allContainedVertexGroups);
             for (VertexGroup vertexGroup : allContainedVertexGroups) {
                 int count = 0;
@@ -962,7 +962,7 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("vertexGroups/vertexGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
             for (VertexGroup vertexGroup : graph.getVertexGroups()) {
-                HashSet<VertexGroup> allContainedVertexGroups = new HashSet<>();
+                LinkedHashSet<VertexGroup> allContainedVertexGroups = new LinkedHashSet<>();
                 if (vertexGroup.getContainedVertexGroups() != null) {
                     addAllContainedVertexGroupsRecursively(vertexGroup.getContainedVertexGroups(),
                             allContainedVertexGroups);
@@ -979,7 +979,7 @@ public class PropertyManager {
             for (VertexGroup vertexGroup : graph.getVertexGroups()) {
                 if (vertexGroup.getContainedVertexGroups() != null) {
                     distribution.add(addAllContainedVertexGroupsRecursively(vertexGroup.getContainedVertexGroups(),
-                            new HashSet<>()));
+                            new LinkedHashSet<>()));
                 }
             }
             return distribution;
@@ -1000,7 +1000,7 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("edgeBundles/edgeBundle", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
             for (EdgeBundle edgeBundle : graph.getEdgeBundles()) {
-                HashSet<EdgeBundle> allContainedEdgeBundles = new HashSet<>();
+                LinkedHashSet<EdgeBundle> allContainedEdgeBundles = new LinkedHashSet<>();
                 if (edgeBundle.getContainedEdgeBundles() != null) {
                     addAllContainedEdgeBundlesRecursively(edgeBundle.getContainedEdgeBundles(),
                             allContainedEdgeBundles);
@@ -1017,7 +1017,7 @@ public class PropertyManager {
             for (EdgeBundle edgeBundle : graph.getEdgeBundles()) {
                 if (edgeBundle.getContainedEdgeBundles() != null) {
                     distribution.add(addAllContainedEdgeBundlesRecursively(edgeBundle.getContainedEdgeBundles(),
-                            new HashSet<>()));
+                            new LinkedHashSet<>()));
                 }
             }
             return distribution;
@@ -1028,7 +1028,7 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("edges/edgeBundle", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
             for (EdgeBundle edgeBundle : graph.getEdgeBundles()) {
-                HashSet<EdgeBundle> thisAndAllContainedEdgeBundles = new HashSet<>();
+                LinkedHashSet<EdgeBundle> thisAndAllContainedEdgeBundles = new LinkedHashSet<>();
                 thisAndAllContainedEdgeBundles.add(edgeBundle);
                 if (edgeBundle.getContainedEdgeBundles() != null) {
                     addAllContainedEdgeBundlesRecursively(edgeBundle.getContainedEdgeBundles(),
@@ -1049,7 +1049,7 @@ public class PropertyManager {
         allProperties.add(NumberDistributionProperty.createNewProperty("hyperedges/edgeBundle", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
             for (EdgeBundle edgeBundle : graph.getEdgeBundles()) {
-                HashSet<EdgeBundle> thisAndAllContainedEdgeBundles = new HashSet<>();
+                LinkedHashSet<EdgeBundle> thisAndAllContainedEdgeBundles = new LinkedHashSet<>();
                 thisAndAllContainedEdgeBundles.add(edgeBundle);
                 if (edgeBundle.getContainedEdgeBundles() != null) {
                     addAllContainedEdgeBundlesRecursively(edgeBundle.getContainedEdgeBundles(),
@@ -1093,7 +1093,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("labels/vertexGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<VertexGroup> allVertexGroups = new HashSet<>();
+            LinkedHashSet<VertexGroup> allVertexGroups = new LinkedHashSet<>();
             for (VertexGroup vertexGroup : graph.getVertexGroups()) {
                 allVertexGroups.add(vertexGroup);
                 addAllContainedVertexGroupsRecursively(vertexGroup.getContainedVertexGroups(), allVertexGroups);
@@ -1108,7 +1108,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("labels/edgeBundle", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<EdgeBundle> allEdgeBundles = new HashSet<>();
+            LinkedHashSet<EdgeBundle> allEdgeBundles = new LinkedHashSet<>();
             for (EdgeBundle edgeBundle : graph.getEdgeBundles()) {
                 allEdgeBundles.add(edgeBundle);
                 addAllContainedEdgeBundlesRecursively(edgeBundle.getContainedEdgeBundles(), allEdgeBundles);
@@ -1168,7 +1168,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("mainLabelTextLength/vertexGroup", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<VertexGroup> allVertexGroups = new HashSet<>();
+            LinkedHashSet<VertexGroup> allVertexGroups = new LinkedHashSet<>();
             for (VertexGroup vertexGroup : graph.getVertexGroups()) {
                 allVertexGroups.add(vertexGroup);
                 addAllContainedVertexGroupsRecursively(vertexGroup.getContainedVertexGroups(), allVertexGroups);
@@ -1189,7 +1189,7 @@ public class PropertyManager {
 
         allProperties.add(NumberDistributionProperty.createNewProperty("mainLabelTextLength/edgeBundle", graph -> {
             NumberDistribution<Integer> distribution = new NumberDistribution<>();
-            HashSet<EdgeBundle> allEdgeBundles = new HashSet<>();
+            LinkedHashSet<EdgeBundle> allEdgeBundles = new LinkedHashSet<>();
             for (EdgeBundle edgeBundle : graph.getEdgeBundles()) {
                 allEdgeBundles.add(edgeBundle);
                 addAllContainedEdgeBundlesRecursively(edgeBundle.getContainedEdgeBundles(), allEdgeBundles);
@@ -1280,7 +1280,7 @@ public class PropertyManager {
                         NumberDistribution<Integer> distribution = new NumberDistribution<>();
                         for (Vertex vertex : graph.getVertices()) {
                             if (ImplicitCharacteristics.isOfType(vertexType, vertex, graph)) {
-                                HashSet<PortGroup> portGroups = new HashSet<>();
+                                LinkedHashSet<PortGroup> portGroups = new LinkedHashSet<>();
                                 addAllContainedPortGroupsRecursively(vertex.getPortCompositions(), portGroups);
                                 distribution.add(portGroups.size());
                             }
@@ -1460,7 +1460,7 @@ public class PropertyManager {
     }
 
     private static List<Property> createDegreeOfHyperedgeProperties() {
-        int maxOwn = 10;
+        int maxOwn = 15;
         List<Property> allProperties = new ArrayList<>(maxOwn + 2);
 
         for (int i = 0; i <= maxOwn + 1; i++) {
@@ -1477,14 +1477,15 @@ public class PropertyManager {
                         ++countHyperedgesOfDegreeI;
                     }
                 }
-                return (double) countHyperedgesOfDegreeI / (double) graph.getEdges().size();
+                //make it absolute instead of relative
+                return countHyperedgesOfDegreeI; // / (double) graph.getEdges().size();
             }));
         }
         return allProperties;
     }
 
     private static Collection<Port> getPortsOfVertexGroup(VertexGroup vertexGroup) {
-        HashSet<Port> ports = new HashSet<>();
+        LinkedHashSet<Port> ports = new LinkedHashSet<>();
         for (Vertex vertex : vertexGroup.getAllRecursivelyContainedVertices()) {
             ports.addAll(vertex.getPorts());
         }
