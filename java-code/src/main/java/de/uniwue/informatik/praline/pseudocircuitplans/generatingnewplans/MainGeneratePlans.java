@@ -11,13 +11,19 @@ import org.javatuples.Pair;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class MainGeneratePlans {
 
     private final static String PATH_ORIGINAL_PLANS =
-            "data" + File.separator + "largest-comp-praline-package-2020-05-18";
+//            "data/denkbares_08_06_2021/praline";
+//            "data" + File.separator + "praline-readable-2020-09-04";
+//            "data" + File.separator + "largest-comp-praline-package-2020-05-18";
+//            "data" + File.separator + "praline-package-2020-05-18";
+//            "data" + File.separator + "denkbares_08_06_2021-praline";
 //            "data" + File.separator + "example-for-visualization-very-small";
 //            "data" + File.separator + "example-for-visualization-others2";
+            "data" + File.separator + "example-cgta";
 
     private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 
@@ -36,7 +42,7 @@ public class MainGeneratePlans {
      * have to be removed and replaced by new elements (not necessarily the exact the number of elements but
      * something around this)
      */
-    private final static double q = 0.1;
+    private final static double q = 0.05; //0.1;
 
     private final static int NUMBER_OF_CANDIDATES_FOR_EDGE_INSERTION = 1000;
 
@@ -51,7 +57,8 @@ public class MainGeneratePlans {
         //by that we collect our data and compute our statistics at first
         DataSetProperties originalPlansProperties = new DataSetProperties();
         for (File file : sourceDir.listFiles()) {
-            if (file.isFile() && file.getName().endsWith(".json")) {
+            if (file.isFile() && file.getName().endsWith(".json") &&
+                    (!PATH_ORIGINAL_PLANS.contains("readable") || file.getName().endsWith("-praline.json"))) {
                 originalPlansProperties.add(gatherDataOfPlan(file));
             }
         }
@@ -105,6 +112,22 @@ public class MainGeneratePlans {
         fos.close();
         Graph newPlan = Serialization.read(dummyFile, Graph.class);
         dummyFile.delete();
+
+
+        ////////////
+        // Phase 0: save current labels
+        ////////////
+        List<String> vertexLabelTexts =
+                newPlan.getVertices().stream().filter(v -> !ImplicitCharacteristics.isSplice(v, newPlan)).map(v ->
+                        ((TextLabel) v.getLabelManager().getMainLabel()).getInputText()).collect(Collectors.toList());
+        LinkedList<String> vertexLabelTextsUnused = new LinkedList<>(vertexLabelTexts);
+        Collections.shuffle(vertexLabelTextsUnused, RANDOM); //create a random order in which the label texts will be re-assigned
+        List<String> edgeLabelTexts =
+                newPlan.getEdges().stream().map(e -> ((TextLabel) e.getLabelManager().getMainLabel()).getInputText())
+                        .collect(Collectors.toList());
+        LinkedList<String> edgeLabelTextsUnused = new LinkedList<>(edgeLabelTexts);
+        Collections.shuffle(edgeLabelTextsUnused, RANDOM); //create a random order in which the label texts will be re-assigned
+
 
         ////////////
         // Phase 1: compute target values of generated plans
@@ -198,7 +221,7 @@ public class MainGeneratePlans {
                 PropertyManager.getProperty("edges/splice")).get(StatisticParameter.MEAN).doubleValue());
         portEdgeIncidences += targetValueSpliceEdgeIncidences;
 
-        int targetValueHyperedgesOfDegreeI[] = new int[16];
+        int targetValueHyperedgesOfDegreeI[] = new int[20];
         targetValueHyperedgesOfDegreeI[0] = 0;
         targetValueHyperedgesOfDegreeI[1] = 0;
         int targetValueEdges = 0;
@@ -507,13 +530,19 @@ public class MainGeneratePlans {
                 edges.size() - targetValueEdges);
         List<Edge> edgesToBeRemoved = selectRandomly(newPlan.getEdges(), numberEdgesRemoved);
 
-        //check for all degrees of hyperedges that we do not have to many
+        //check for all degrees of hyperedges that we do not have too many
         LinkedHashMap<Integer, List<Edge>> edgesOfDegI = new LinkedHashMap<>();
         for (int i = 0; i < targetValueHyperedgesOfDegreeI.length; i++) {
             edgesOfDegI.put(i, new ArrayList<>());
         }
         for (Edge edge : edges) {
-            edgesOfDegI.get(edge.getPorts().size()).add(edge);
+            int degree = edge.getPorts().size();
+            if (degree < targetValueHyperedgesOfDegreeI.length) {
+                edgesOfDegI.get(degree).add(edge);
+            }
+            else {
+                System.out.println("Warning! Skipped edge " + edge + " of degree " + degree + ".");
+            }
         }
         for (int i = 0; i < targetValueHyperedgesOfDegreeI.length; i++) {
             List<Edge> edgesOfThisDeg = edgesOfDegI.get(i);
@@ -539,8 +568,8 @@ public class MainGeneratePlans {
 
         // G. change labels
 
-        changeLabelsRandomly(newPlan.getVertices(), splices);
-        changeLabelsRandomly(newPlan.getEdges(), null);
+        changeLabelsRandomly(newPlan.getVertices(), splices, vertexLabelTextsUnused, vertexLabelTexts);
+        changeLabelsRandomly(newPlan.getEdges(), null, edgeLabelTextsUnused, edgeLabelTexts);
 
         ////////////
         // Phase 3: insert new elements to reach the target values (precisely or approximately)
@@ -562,7 +591,7 @@ public class MainGeneratePlans {
         // B. solo vertices
 
         while (soloVertices.size() < targetValueSoloVertices) {
-            TextLabel vertexLabel = new TextLabel(getRandom16DigitsHexadecimalString());
+            TextLabel vertexLabel = new TextLabel(getNextLabelText(vertexLabelTextsUnused, vertexLabelTexts));
             Vertex newSoloVertex = new Vertex(null, Collections.singleton(vertexLabel));
             //init every vertex with at least one port
             int numberOfNewPorts = determineNumberOfNewElements(targetValuePortsSoloVertices, targetValueSoloVertices,
@@ -591,7 +620,7 @@ public class MainGeneratePlans {
         while (connectors.size() < targetValueConnectors) {
             ArrayList<Vertex> verticesOfNewConnector = new ArrayList<>(2);
             for (int i = 0; i < 2; i++) {
-                TextLabel vertexLabel = new TextLabel(getRandom16DigitsHexadecimalString());
+                TextLabel vertexLabel = new TextLabel(getNextLabelText(vertexLabelTextsUnused, vertexLabelTexts));
                 Vertex newConnectorVertex = new Vertex(null, Collections.singleton(vertexLabel));
                 verticesOfNewConnector.add(newConnectorVertex);
                 newPlan.addVertex(newConnectorVertex);
@@ -642,7 +671,7 @@ public class MainGeneratePlans {
                             deviceConnectors.size(), targetValueStandardDeviationVerticesPerDeviceConnector);
 
             //create device vertex of new device connector
-            TextLabel deviceLabel = new TextLabel(getRandom16DigitsHexadecimalString());
+            TextLabel deviceLabel = new TextLabel(getNextLabelText(vertexLabelTextsUnused, vertexLabelTexts));
             Vertex newDeviceVertex = new Vertex(null, Collections.singleton(deviceLabel));
             newPlan.addVertex(newDeviceVertex);
             allDeviceVertices.add(newDeviceVertex);
@@ -653,7 +682,8 @@ public class MainGeneratePlans {
 
             //create device connector vertices of new device connector
             for (int i = 0; i < Math.max(1, numberOfNewVerticesOfDeviceConnector - 1); i++) {
-                TextLabel deviceConnectorVertexLabel = new TextLabel(getRandom16DigitsHexadecimalString());
+                TextLabel deviceConnectorVertexLabel = new TextLabel(
+                        getNextLabelText(vertexLabelTextsUnused, vertexLabelTexts));
                 Vertex newDeviceConnectorVertex = new Vertex(null, Collections.singleton(deviceConnectorVertexLabel));
                 newPlan.addVertex(newDeviceConnectorVertex);
 
@@ -680,7 +710,7 @@ public class MainGeneratePlans {
             VertexGroup deviceConnector = deviceVertex.getVertexGroup();
             //create new device connector vertex
             Vertex newDeviceConnectorVertex = new Vertex(null,
-                    Collections.singleton(new TextLabel(getRandom16DigitsHexadecimalString())));
+                    Collections.singleton(new TextLabel(getNextLabelText(vertexLabelTextsUnused, vertexLabelTexts))));
             newPlan.addVertex(newDeviceConnectorVertex);
             allDeviceConnectorVertices.add(newDeviceConnectorVertex);
             deviceConnector.addVertex(newDeviceConnectorVertex);
@@ -813,7 +843,7 @@ public class MainGeneratePlans {
                     newPlan) : selectRandomly(portsComponents.get(0), 1).get(0);
             Port port1 = portsComponents.get(1).isEmpty() ? getPortThatCanHaveEdges(componentsToBeConnected.get(1),
                     newPlan) : selectRandomly(portsComponents.get(1), 1).get(0);
-            addNewEdge(newPlan, Arrays.asList(port0, port1), edges);
+            addNewEdge(newPlan, Arrays.asList(port0, port1), edges, edgeLabelTextsUnused, edgeLabelTexts);
             --missingEdges;
             updatePortLists(port0, regularPortsWithoutEdgeUnassigned, numberOfEdges2RegularPort, newPlan);
             updatePortLists(port1, regularPortsWithoutEdgeUnassigned, numberOfEdges2RegularPort, newPlan);
@@ -911,7 +941,7 @@ public class MainGeneratePlans {
             int currEdgesOfDegI = countHyperedgesOfDegreeI(newPlan, i);
             while (targetValueHyperedgesOfDegreeI[i] > currEdgesOfDegI) {
                 boolean success = findAndInsertNewEdge(newPlan, portsToGetAnEdge, i, edges,
-                        targetValueMeanParallelEdges, targetValueSelfLoops);
+                        targetValueMeanParallelEdges, targetValueSelfLoops, edgeLabelTextsUnused, edgeLabelTexts);
                 if (!success) {
                     break;
                 }
@@ -922,7 +952,7 @@ public class MainGeneratePlans {
         //add edges of deg 2
         while (missingEdges > 0) {
             boolean success = findAndInsertNewEdge(newPlan, portsToGetAnEdge, 2, edges,
-                    targetValueMeanParallelEdges, targetValueSelfLoops);
+                    targetValueMeanParallelEdges, targetValueSelfLoops, edgeLabelTextsUnused, edgeLabelTexts);
             if (!success) {
                 break;
             }
@@ -983,7 +1013,10 @@ public class MainGeneratePlans {
             numberOfEdges2RegularPort.get(1).add(port);
         }
         else {
-            numberOfEdges2RegularPort.get(port.getEdges().size() - 1).remove(port);
+            if (port.getEdges().size() > 1) {
+                numberOfEdges2RegularPort.get(port.getEdges().size() - 1).remove(port);
+            }
+            numberOfEdges2RegularPort.putIfAbsent(port.getEdges().size(), new ArrayList<>());
             numberOfEdges2RegularPort.get(port.getEdges().size()).add(port);
         }
     }
@@ -1023,12 +1056,16 @@ public class MainGeneratePlans {
      * @param numberOfPorts
      * @param setOfAlreadyExistingEdges
      * @param targetValueMeanParallelEdges
+     * @param edgeLabelTextsUnused
+     * @param edgeLabelTexts
      * @return
      *      success
      */
     private static boolean findAndInsertNewEdge(Graph graph, List<Port> portsToGetAnEdge, int numberOfPorts,
                                                 Collection<Edge> setOfAlreadyExistingEdges,
-                                                double targetValueMeanParallelEdges, int targetValueSelfLoops) {
+                                                double targetValueMeanParallelEdges, int targetValueSelfLoops,
+                                                LinkedList<String> edgeLabelTextsUnused,
+                                                Collection<String> edgeLabelTexts) {
         List<Collection<Port>> candidatesForNewEdge = generateCandidatesForNewEdge(portsToGetAnEdge, numberOfPorts);
         //if no edges available return fail
         if (candidatesForNewEdge == null) {
@@ -1039,14 +1076,14 @@ public class MainGeneratePlans {
         Collection<Port> bestCandidate = null;
         for (Collection<Port> candidate : candidatesForNewEdge) {
             double badnessCandidate = evaluateInsertionOfEdge(graph, candidate, targetValueMeanParallelEdges,
-                    targetValueSelfLoops);
+                    targetValueSelfLoops, edgeLabelTextsUnused, edgeLabelTexts);
             if (badnessCandidate < bestBadness) {
                 bestBadness = badnessCandidate;
                 bestCandidate = candidate;
             }
         }
 
-        addNewEdge(graph, bestCandidate, setOfAlreadyExistingEdges);
+        addNewEdge(graph, bestCandidate, setOfAlreadyExistingEdges, edgeLabelTextsUnused, edgeLabelTexts);
         for (Port port : bestCandidate) {
             portsToGetAnEdge.remove(port);
         }
@@ -1058,13 +1095,17 @@ public class MainGeneratePlans {
      * @param graph
      * @param portsOfNewEdge
      * @param targetValueMeanParallelEdges
+     * @param edgeLabelTextsUnused
+     * @param edgeLabelTexts
      * @return
      *      badness of insertion (0 is best possible insertion)
      */
     private static double evaluateInsertionOfEdge(Graph graph, Collection<Port> portsOfNewEdge,
-                                                  double targetValueMeanParallelEdges, int targetValueSelfLoops) {
+                                                  double targetValueMeanParallelEdges, int targetValueSelfLoops,
+                                                  LinkedList<String> edgeLabelTextsUnused,
+                                                  Collection<String> edgeLabelTexts) {
         //add edge just to compute the badness
-        Edge newEdge = addNewEdge(graph, portsOfNewEdge, null);
+        Edge newEdge = addNewEdge(graph, portsOfNewEdge, null, edgeLabelTextsUnused, edgeLabelTexts);
         //compute badness
         NumberDistributionProperty<Integer> parallelEdgesProperty =
                 (NumberDistributionProperty<Integer>) PropertyManager.getProperty("parallelEdges");
@@ -1140,8 +1181,9 @@ public class MainGeneratePlans {
         return sum;
     }
 
-    private static Edge addNewEdge(Graph graph, Collection<Port> ports, Collection<Edge> setOfAlreadyExistingEdges) {
-        TextLabel edgeLabel = new TextLabel(getRandom16DigitsHexadecimalString());
+    private static Edge addNewEdge(Graph graph, Collection<Port> ports, Collection<Edge> setOfAlreadyExistingEdges,
+                                   LinkedList<String> edgeLabelTextsUnused, Collection<String> edgeLabelTexts) {
+        TextLabel edgeLabel = new TextLabel(getNextLabelText(edgeLabelTextsUnused, edgeLabelTexts));
         Edge newEdge = new Edge(ports, Collections.singleton(edgeLabel), null);
         if (setOfAlreadyExistingEdges != null) {
             setOfAlreadyExistingEdges.add(newEdge);
@@ -1193,14 +1235,16 @@ public class MainGeneratePlans {
     }
 
     private static void changeLabelsRandomly(Collection<? extends LabeledObject> toBeRenamed,
-                                             Collection<? extends LabeledObject> toBeExcluded) {
+                                             Collection<? extends LabeledObject> toBeExcluded,
+                                             LinkedList<String> labelTextsUnused,
+                                             Collection<String> labelTexts) {
         if (toBeExcluded == null) {
             toBeExcluded = Collections.emptyList();
         }
         for (LabeledObject labeledObject : toBeRenamed) {
             if (!toBeExcluded.contains(labeledObject)) {
                 ((TextLabel) labeledObject.getLabelManager().getMainLabel())
-                        .setInputText(getRandom16DigitsHexadecimalString());
+                        .setInputText(getNextLabelText(labelTextsUnused, labelTexts));
             }
         }
     }
@@ -1321,20 +1365,21 @@ public class MainGeneratePlans {
             }
         }
 
-        int portNumber = resetPortLabelText(vertexWithMostPorts, skipNumberProbability, "A.");
+        int portNumber = resetPortLabelText(vertexWithMostPorts, skipNumberProbability, ""); //"A.");
 
         //name the ports of the other vertices
         //1. determine prefix
-        Map<Vertex, String> vertex2prefix = new LinkedHashMap<>();
-        vertex2prefix.put(vertexWithMostPorts, "A.");
-        Iterator<String> alphabet =
-                Arrays.asList("B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
-                        "T", "U", "V", "W", "X", "Y", "Z", "Aa", "Ab", "Ac", "Ad", "Ae", "Af", "Ag", "Ah").iterator();
-        for (Vertex vertex : vertices) {
-            if (!vertex.equals(vertexWithMostPorts)) {
-                vertex2prefix.put(vertex, alphabet.next() + ".");
-            }
-        }
+        //TODO: for now: no use of prefix any more
+//        Map<Vertex, String> vertex2prefix = new LinkedHashMap<>();
+//        vertex2prefix.put(vertexWithMostPorts, "A.");
+//        Iterator<String> alphabet =
+//                Arrays.asList("B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
+//                        "T", "U", "V", "W", "X", "Y", "Z", "Aa", "Ab", "Ac", "Ad", "Ae", "Af", "Ag", "Ah").iterator();
+//        for (Vertex vertex : vertices) {
+//            if (!vertex.equals(vertexWithMostPorts)) {
+//                vertex2prefix.put(vertex, alphabet.next() + ".");
+//            }
+//        }
         //2. find pairings and name them accordingly
         for (PortPairing portPairing : vertexGroup.getPortPairings()) {
             Port port0 = portPairing.getPort0();
@@ -1350,12 +1395,13 @@ public class MainGeneratePlans {
                     }
                 }
                 ((TextLabel) basePort.getLabelManager().getMainLabel()).setInputText(
-                        vertex2prefix.get(basePort.getVertex()) + (portNumber++));
+//                        vertex2prefix.get(basePort.getVertex()) +
+                        (portNumber++) + "");
             }
             //name the other by the base port
             ((TextLabel) otherPort.getLabelManager().getMainLabel()).setInputText(
-                    vertex2prefix.get(otherPort.getVertex()) +
-                            ((TextLabel) basePort.getLabelManager().getMainLabel()).getInputText().substring(2));
+//                    vertex2prefix.get(otherPort.getVertex()) +
+                    ((TextLabel) basePort.getLabelManager().getMainLabel()).getInputText()); //.substring(2));
         }
         //3. find and name unpaired ports
         for (Vertex vertex : vertices) {
@@ -1367,7 +1413,8 @@ public class MainGeneratePlans {
                         }
                     }
                     ((TextLabel) port.getLabelManager().getMainLabel()).setInputText(
-                            vertex2prefix.get(port.getVertex()) + (portNumber++));
+//                            vertex2prefix.get(port.getVertex()) +
+                            (portNumber++) + "");
                 }
             }
         }
@@ -1429,6 +1476,18 @@ public class MainGeneratePlans {
             vertexGroupTypeMap.get(ImplicitCharacteristics.getVertexGroupType(vertexGroup, plan)).add(vertexGroup);
         }
         return vertexGroupTypeMap;
+    }
+
+    private static String getNextLabelText(LinkedList<String> labelTextsUnused,
+                                           Collection<String> labelTexts) {
+        if (!labelTextsUnused.isEmpty()) {
+            return labelTextsUnused.poll();
+        }
+
+        //we have used all available label texts once -> re-start
+        labelTextsUnused.addAll(labelTexts);
+        Collections.shuffle(labelTextsUnused, RANDOM);
+        return getNextLabelText(labelTextsUnused, labelTexts);
     }
 
     private static String getRandom16DigitsHexadecimalString() {

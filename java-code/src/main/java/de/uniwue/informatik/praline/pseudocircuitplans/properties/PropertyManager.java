@@ -399,17 +399,30 @@ public class PropertyManager {
             return count;
         }));
 
-        // # self loop edges
+        // # stub edges = edges of deg 1
+
+        allProperties.add(NumericalProperty.createNewProperty("stubEdges", graph -> {
+            int count = 0;
+            for (Edge edge : graph.getEdges()) {
+                count += edge.getPorts().size() == 1 ? 1 : 0;
+            }
+            return count;
+        }));
+
+        // # self loop edges (without stub edges)
 
         allProperties.add(NumericalProperty.createNewProperty("selfLoopEdges", graph -> {
             int count = 0;
             for (Edge edge : graph.getEdges()) {
-                LinkedHashSet<Vertex> incidentVertices = new LinkedHashSet<>();
-                for (Port port : edge.getPorts()) {
-                    incidentVertices.add(port.getVertex());
-                }
-                if (incidentVertices.size() == 1) {
-                    count += 1;
+                List<Port> ports = edge.getPorts();
+                if (ports.size() > 1) {
+                    LinkedHashSet<Vertex> incidentVertices = new LinkedHashSet<>();
+                    for (Port port : ports) {
+                        incidentVertices.add(port.getVertex());
+                    }
+                    if (incidentVertices.size() == 1) {
+                        count += 1;
+                    }
                 }
             }
             return count;
@@ -1460,7 +1473,7 @@ public class PropertyManager {
     }
 
     private static List<Property> createDegreeOfHyperedgeProperties() {
-        int maxOwn = 15;
+        int maxOwn = 19;
         List<Property> allProperties = new ArrayList<>(maxOwn + 2);
 
         for (int i = 0; i <= maxOwn + 1; i++) {

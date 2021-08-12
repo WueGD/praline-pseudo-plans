@@ -9,8 +9,10 @@ import java.io.IOException;
 
 public class MainReadPlans {
 
-    private final static String SOURCE_PATH = "data" + File.separator + "largest-comp-praline-package-2020-05-18";
-//    "../drawings-original-generated/very-small";
+    private final static String SOURCE_PATH = "data" + File.separator +
+//            "praline-package-2020-05-18";
+//            "largest-comp-praline-package-2020-05-18";
+            "praline-readable-2020-09-04";
 
     public static void main(String[] args) throws IOException {
         DataSetProperties originalPlansProperties = getDataSetProperties(SOURCE_PATH, true);
@@ -74,7 +76,8 @@ public class MainReadPlans {
         //go through all files and if it is a json, it should be a circuit plan and we read it
         DataSetProperties plansProperties = new DataSetProperties();
         for (File file : sourceDir.listFiles()) {
-            if (file.isFile() && file.getName().endsWith(".json")) {
+            if (file.isFile() && file.getName().endsWith(".json") &&
+                    (!path.contains("readable") || file.getName().endsWith("-praline.json"))) {
                 plansProperties.add(analyzePlan(file, textOutput));
             }
         }

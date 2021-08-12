@@ -8,12 +8,14 @@ import java.util.LinkedHashSet;
 
 public class ImplicitCharacteristics {
 
-    public static final String SPLICE_LABEL = "e9800998ecf8427e";
+    public static final String SPLICE_LABEL_OLD = "e9800998ecf8427e";
+    public static final String SPLICE_LABEL = "splice";
 
     public static boolean isSplice(Vertex vertex, Graph graph) {
         return vertex.getPortCompositions().size() == 1
                 && vertex.getPortCompositions().get(0) instanceof Port
-                && ((TextLabel) vertex.getLabelManager().getMainLabel()).getInputText().equals(SPLICE_LABEL)
+                && (((TextLabel) vertex.getLabelManager().getMainLabel()).getInputText().equals(SPLICE_LABEL_OLD) ||
+                        (((TextLabel) vertex.getLabelManager().getMainLabel()).getInputText().equals(SPLICE_LABEL)))
                 && getNumberOfVertexGroupsContainingVertex(vertex, graph) == 0;
     }
 
