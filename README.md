@@ -15,7 +15,7 @@ These cable plans are good data sets to be drawn with the praline-core graph dra
 
 ## Funding
 
-Substantial parts of this library were developed in the context of the iPRALINE (interaktive Problemanalyse und -lösung in komplexen industriellen Netzwerken) project
+Substantial parts of this library were developed in the context of the project iPRALINE – grant ZF4117505 (interaktive Problemanalyse und -lösung in komplexen industriellen Netzwerken)
 from 2019–2021, which has been funded by the German Federal Ministry for Economic Affairs and Energy as part of the ZIM (Zentrales Innovationsprogramm Mittelstand) funding program.
 
 
@@ -39,4 +39,9 @@ Layered drawing of undirected graphs with generalized port constraints.
 In *Proc. 28th International Symposium on Graph Drawing & Network Visualization (GD’20)*, pages 220–234.
 Springer, 2020.
 [doi:10.1007/978-3-030-68766-3_18](https://doi.org/10.1007/978-3-030-68766-3_18).
+
+
+## Contact
+
+For contact, you can write an email to ``praline *at* informatik *dot* uni-wuerzburg *dot* de``.
 
